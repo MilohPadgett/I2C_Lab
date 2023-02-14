@@ -137,9 +137,9 @@ class MMA845x:
         be made, one must call @c active(). """
 
         if self._works:
-            reg1 = ord (self._i2c.mem_read (1, self._addr, CTRL_REG1))
+            reg1 = ord (self.i2c.mem_read (1, self.addr, CTRL_REG1))
             reg1 &= ~0x01
-            self._i2c.mem_write (chr (reg1 & 0xFF), self._addr, CTRL_REG1)
+            self.i2c.mem_write (chr (reg1 & 0xFF), self.addr, CTRL_REG1)
 
 
     def get_ax_bits (self):
@@ -147,8 +147,9 @@ class MMA845x:
         return it.
         @return The measured X acceleration in A/D conversion bits """
 
-        print ('MMA845x clueless about X acceleration')
-        return 0
+        #print ('MMA845x clueless about X acceleration')
+        msb = self.i2c.mem_read (2, self.addr, OUT_X_MSB, addr_size=16)
+        return msb
 
 
     def get_ay_bits (self):
@@ -156,8 +157,8 @@ class MMA845x:
         return it.
         @return The measured Y acceleration in A/D conversion bits """
 
-        print ('MMA845x clueless about Y acceleration')
-        return 0
+        #print ('MMA845x clueless about Y acceleration')
+
 
 
     def get_az_bits (self):
@@ -165,8 +166,8 @@ class MMA845x:
         return it.
         @return The measured Z acceleration in A/D conversion bits """
 
-        print ('MMA845x clueless about Z acceleration')
-        return 0
+        #print ('MMA845x clueless about Z acceleration')
+
 
 
     def get_ax (self):
@@ -174,8 +175,13 @@ class MMA845x:
         that the accelerometer was correctly calibrated at the factory.
         @return The measured X acceleration in g's """
 
-        print ('MMA845x uncalibrated X')
-        return 0
+        #print ('MMA845x uncalibrated X')
+        msb = self.get_ax_bits()
+        num = (int.from_bytes(msb,'little', True))
+        if(num>(2**15)):
+            num = ((int.from_bytes(msb,'little', True)) - (2**16))
+ 
+        return num/17000
 
 
     def get_ay (self):
@@ -184,8 +190,8 @@ class MMA845x:
         measurement is adjusted for the range (2g, 4g, or 8g) setting.
         @return The measured Y acceleration in g's """
 
-        print ('MMA845x uncalibrated Y')
-        return 0
+        #print ('MMA845x uncalibrated Y')
+        
 
 
     def get_az (self):
@@ -194,8 +200,8 @@ class MMA845x:
         measurement is adjusted for the range (2g, 4g, or 8g) setting.
         @return The measured Z acceleration in g's """
 
-        print ('MMA845x uncalibrated Z')
-        return 0
+        #print ('MMA845x uncalibrated Z')
+
 
 
     def get_accels (self):
@@ -223,5 +229,16 @@ class MMA845x:
 
             return diag_str
 
+
+if __name__ == "__main__":
+    import pyb
+    aye = pyb.I2C (1, pyb.I2C.CONTROLLER)
+    pyb.I2C.scan (aye)
+    import MMA845x
+    cl = MMA845x.MMA845x(aye,29)
+    cl.active()
+    while(1):
+        print(cl.get_accels())
+        pyb.delay(1000)
 
 
