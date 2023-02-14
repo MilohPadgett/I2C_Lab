@@ -14,6 +14,7 @@ import gc
 import pyb
 import cotask
 import task_share
+import mma845x
 
 
 def collect_fun(shares):
@@ -23,12 +24,12 @@ def collect_fun(shares):
     """
     # Get references to the share and queue which have been passed to this task
     my_queue = shares
-
-    counter = 0
+    accel = pyb.I2C (1, pyb.I2C.CONTROLLER)
+    cl = mma845x.MMA845x(accel,pyb.I2C.scan (accel)[0])
+    cl.active()
     while True:
-        my_queue.put(counter)
-        counter += 1
-
+        num = cl.get_ax()
+        my_queue.put(num)
         yield 0
 
 
@@ -38,7 +39,7 @@ def print_fun(shares):
     @param shares A tuple of a share and queue from which this task gets data
     """
     # Get references to the share and queue which have been passed to this task
-    the_share, the_queue = shares
+    the_queue = shares
 
     while True:
         # Show everything currently in the queue and the value in the share
@@ -65,9 +66,9 @@ if __name__ == "__main__":
     # allocated for state transition tracing, and the application will run out
     # of memory after a while and quit. Therefore, use tracing only for 
     # debugging and set trace to False when it's not needed
-    task1 = cotask.Task(collect_fun, name="Task_1", priority=1, period=400,
+    task1 = cotask.Task(collect_fun, name="Task_1", priority=1, period=2,
                         profile=True, trace=False, shares=(q0))
-    task2 = cotask.Task(print_fun, name="Task_2", priority=2, period=1500,
+    task2 = cotask.Task(print_fun, name="Task_2", priority=2, period=2,
                         profile=True, trace=False, shares=(q0))
     cotask.task_list.append(task1)
     cotask.task_list.append(task2)
